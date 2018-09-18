@@ -1,242 +1,241 @@
-{% extends "base.html" %}
-
-{% block content %}
-  {% load staticfiles %}
-  <h1> Call Room</h1>
-  
-  <button id="accept-btn" disabled>Accept Call</button>
-  <button id="start-btn">Start recording</button>
-  <button id="stop-btn" disabled>Stop recording</button>
-
-  <button id="transfer" disabled>Transfer</button>
-
-    <script type="text/javascript" src='{% static "reconnecting-websocket.min.js" %}'></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+{% extends "base.html" %} {% block content %} {% load staticfiles %}
+<h1> Call Room</h1>
+<button id="accept-btn" disabled>Accept Call</button>
+<button id="start-btn">Start recording</button>
+<button id="stop-btn" disabled>Stop recording</button>
+<button id="transfer" disabled>Transfer</button>
+<script type="text/javascript" src='{% static "reconnecting-websocket.min.js" %}'></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<br>
+<br>
+<br>
+<table id='conversations' style="width:60%">
+    <tr>
+    </tr>
+</table>
 <script>
-        // Expose globally your audio_context, the recorder instance and audio_stream
-        var audio_context;
-        var recorder;
-        var audio_stream;
-        var userId = prompt("Please enter your name");
-        var callId = '7cda3c52-a254-4c04-906d-6f2f8712dcdb';
-        var dataGlobal = {};
+// Expose globally your audio_context, the recorder instance and audio_stream
+var audio_context;
+var recorder;
+var audio_stream;
+var userId = prompt("Please enter your name");
+var callId = '7cda3c52-a254-4c04-906d-6f2f8712dcdb';
+var dataGlobal = {};
+var showConversations = false;
+var globalCallback;
+/**
+ * Patch the APIs for every browser that supports them and check
+ * if getUserMedia is supported on the browser. 
+ * 
+ */
+function Initialize() {
+    try {
+        // Monkeypatch for AudioContext, getUserMedia and URL
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+        window.URL = window.URL || window.webkitURL;
+
+        // Store the instance of AudioContext globally
+        audio_context = new AudioContext;
+        console.log('Audio context is ready !');
+        console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+    } catch (e) {
+        alert('No web audio support in this browser!');
+    }
+}
+
+/**
+ * Starts the recording process by requesting the access to the microphone.
+ * Then, if granted proceed to initialize the library and store the stream.
+ *
+ * It only stops when the method stopRecording is triggered.
+ */
+function startRecording() {
+    // Access the Microphone using the navigator.getUserMedia method to obtain a stream
+    navigator.getUserMedia({ audio: true }, function(stream) {
+        // Expose the stream to be accessible globally
+        audio_stream = stream;
+        // Create the MediaStreamSource for the Recorder library
+        var input = audio_context.createMediaStreamSource(stream);
+        console.log('Media stream succesfully created');
+
+        // Initialize the Recorder Library
+        recorder = new Recorder(input);
+        console.log('Recorder initialised');
+
+        // Start recording !
+        recorder && recorder.record();
+        console.log('Recording...');
+
+        // Disable Record button and enable stop button !
+        document.getElementById("start-btn").disabled = true;
+        document.getElementById("stop-btn").disabled = false;
+        document.getElementById("transfer").disabled = false;
+
+        setTimeout(function() {
+            recorder && recorder.exportWAV(uploadRecording,
+                ("audio/wav"))
+        }, 3000);
+
+    }, function(e) {
+        console.error('No live audio input: ' + e);
+    });
+}
+
+/**
+ * Stops the recording process. The method expects a callback as first
+ * argument (function) executed once the AudioBlob is generated and it
+ * receives the same Blob as first argument. The second argument is
+ * optional and specifies the format to export the blob either wav or mp3
+ */
+function stopRecording(callback, AudioFormat) {
+    // Stop the recorder instance
+    recorder && recorder.stop();
+    console.log('Stopped recording.');
+
+    // Stop the getUserMedia Audio Stream !
+    audio_stream.getAudioTracks()[0].stop();
+
+    // Disable Stop button and enable Record button !
+    document.getElementById("start-btn").disabled = false;
+    document.getElementById("stop-btn").disabled = true;
+    document.getElementById("transfer").disabled = true;
+    document.getElementById("accept-btn").disabled = true;
+
+    dataGlobal = {};
+    showConversations = false;
+    $("table tbody").empty();
+
+    // Use the Recorder Library to export the recorder Audio as a .wav file
+    // The callback providen in the stop recording method receives the blob
+    if (typeof(callback) == "function") {
         /**
-         * Patch the APIs for every browser that supports them and check
-         * if getUserMedia is supported on the browser. 
-         * 
+         * Export the AudioBLOB using the exportWAV method.
+         * Note that this method exports too with mp3 if
+         * you provide the second argument of the function
          */
-        function Initialize() {
-            try {
-                // Monkeypatch for AudioContext, getUserMedia and URL
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
-                navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
-                window.URL = window.URL || window.webkitURL;
+        globalCallback = callback;
+        recorder && recorder.exportWAV(uploadRecording,
+            ("audio/wav"));
+    }
+};
 
-                // Store the instance of AudioContext globally
-                audio_context = new AudioContext;
-                console.log('Audio context is ready !');
-                console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
-            } catch (e) {
-                alert('No web audio support in this browser!');
-            }
-        }
- 
-        /**
-         * Starts the recording process by requesting the access to the microphone.
-         * Then, if granted proceed to initialize the library and store the stream.
-         *
-         * It only stops when the method stopRecording is triggered.
-         */
-        function startRecording() {
-            // Access the Microphone using the navigator.getUserMedia method to obtain a stream
-            navigator.getUserMedia({ audio: true }, function (stream) {
-                // Expose the stream to be accessible globally
-                audio_stream = stream;
-                // Create the MediaStreamSource for the Recorder library
-                var input = audio_context.createMediaStreamSource(stream);
-                console.log('Media stream succesfully created');
+var uploadRecording = function(blob) {
+    var fd = new FormData();
+    fd.append('fname', 'test.wav');
+    fd.append('data', blob);
+    fd.append('callId', callId);
+    fd.append('userId', userId);
+    $.ajax({
+        type: 'POST',
+        url: '/record/uploadAudioFile/',
+        data: fd,
+        processData: false,
+        contentType: false
+    }).done(function(data) {
+        console.log('data', data);
+    });
+    recorder.clear();
+    if (document.getElementById("stop-btn").disabled === false) {
+        setTimeout(function() {
+            recorder && recorder.exportWAV(uploadRecording,
+                ("audio/wav"))
+        }, 3000);
+    }
+}
 
-                // Initialize the Recorder Library
-                recorder = new Recorder(input);
-                console.log('Recorder initialised');
+// Initialize everything once the window loads
+var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
+var chatsock = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/chat" + window.location.pathname);
+console.log('connected');
 
-                // Start recording !
-                recorder && recorder.record();
-                console.log('Recording...');
+chatsock.onmessage = function(message) {
+    var data = JSON.parse(message.data);
+    console.log('On message ' , data);
 
-                // Disable Record button and enable stop button !
-                document.getElementById("start-btn").disabled = true;
-                document.getElementById("stop-btn").disabled = false;
-                document.getElementById("transfer").disabled = false;
-            }, function (e) {
-                console.error('No live audio input: ' + e);
-            });
-        }
+    if ('type' in data && data['type'] === 'transfer' && userId !== data['from']) {
+        alert('Incoming Call');
+        dataGlobal = data;
+        document.getElementById("accept-btn").disabled = false;
+        $.playSound("http://www.noiseaddicts.com/samples_1w72b820/3724.mp3");
+    }
+};
 
-        /**
-         * Stops the recording process. The method expects a callback as first
-         * argument (function) executed once the AudioBlob is generated and it
-         * receives the same Blob as first argument. The second argument is
-         * optional and specifies the format to export the blob either wav or mp3
-         */
-        function stopRecording(callback, AudioFormat) {
-            // Stop the recorder instance
-            recorder && recorder.stop();
-            console.log('Stopped recording.');
-
-            // Stop the getUserMedia Audio Stream !
-            audio_stream.getAudioTracks()[0].stop();
-
-            // Disable Stop button and enable Record button !
-            document.getElementById("start-btn").disabled = false;
-            document.getElementById("stop-btn").disabled = true;
-            document.getElementById("transfer").disabled = true;
-            document.getElementById("accept-btn").disabled = true;
-
-            // Use the Recorder Library to export the recorder Audio as a .wav file
-            // The callback providen in the stop recording method receives the blob
-            if(typeof(callback) == "function"){
-
-                /**
-                 * Export the AudioBLOB using the exportWAV method.
-                 * Note that this method exports too with mp3 if
-                 * you provide the second argument of the function
-                 */
-                recorder && recorder.exportWAV(function (blob) {
-                  console.log('yomanhdhsfshhjf');
-                  var fd = new FormData();
-                  fd.append('fname', 'test.wav');
-                  fd.append('data', blob);
-                  fd.append('callId', callId);
-                  fd.append('userId', userId);
-                  $.ajax({
-                      type: 'POST',
-                      url: '/record/uploadAudioFile/',
-                      data: fd,
-                      processData: false,
-                      contentType: false
-                  }).done(function(data) {
-                         console.log(data);
-                  });
-                    callback(blob);
-
-                    // create WAV download link using audio data blob
-                    // createDownloadLink();
-
-                    // Clear the Recorder to start again !
-                    recorder.clear();
-                }, (AudioFormat || "audio/wav"));
-            }
-        }
-
-        // Initialize everything once the window loads
-        var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
-        var chatsock = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/chat" + window.location.pathname);
-        console.log('connected');
-
-        chatsock.onmessage = function(message) {
-          var data = JSON.parse(message.data);
-          console.log(data['from']);
-          console.log(userId);
-          console.log(data);
-
-          if('type' in data && data['type'] === 'transfer' && userId !== data['from']) {
-            alert('received a transfer call');
+window.refresh = function() {
+    if (dataGlobal && dataGlobal['callId'] && showConversations === true) {
+        $.ajax({
+            type: 'GET',
+            url: '/call/' + callId
+        }).done(function(data) {
             console.log(data);
-            dataGlobal = data;
-            document.getElementById("accept-btn").disabled = false;
-          }
-        };
+            console.log(typeof(data));
+            console.log(data.length);
+            $("table tbody").empty();
+            $("table tbody").append("<tr><td>#</td><td>Conversations</td></tr>");
+            for (var i = 0; i < data.length; i++) {
+                console.log('yoman');
+                console.log(data[i]);
+                var cnt = i + 1;
+                var text = data[data.length-i-1]['text'];
+                console.log(text)
+                var conversation = "<tr><td>" + cnt + "</td><td>" + text + "</td></tr>";
+                $("table tbody").append(conversation);
+            }
+            setTimeout(window.refresh, 1000);
+        });
+    } else {
+        setTimeout(window.refresh, 1000);
+    }
+}
 
-        window.refresh = function() {
-          console.log(dataGlobal)
-          if(dataGlobal && dataGlobal['callId']) {
-              $.ajax({
-                type: 'GET',
-                url: '/call/' + callId
-              }).done(function(data) {
-                     //setTimeout(refresh, 5000);
-                     console.log(data);
-              });
-          }
+setTimeout(window.refresh(), 1000);
+
+window.onload = function() {
+    // Prepare and check if requirements are filled
+    Initialize();
+
+    var convertAudio = function(AudioBLOB) {
+
+    }
+
+    // Handle on start recording button
+    document.getElementById("start-btn").addEventListener("click", function() {
+        startRecording();
+    }, false);
+
+    document.getElementById("accept-btn").addEventListener("click", function() {
+        if (document.getElementById("accept-btn").disabled === false) {
+            document.getElementById("accept-btn").disabled = true;
+            showConversations = true;
+            startRecording();
         }
+    }, false);
 
-        window.refresh();
+    // Handle on stop recording button
+    document.getElementById("transfer").addEventListener("click", function(event) {
+        var message = {
+            handle: $('#handle').val(),
+            message: $('#message').val(),
+            type: 'transfer',
+            callId: callId,
+            from: userId
+        }
+        chatsock.send(JSON.stringify(message));
+        var _AudioFormat = "audio/wav";
+        stopRecording(convertAudio, _AudioFormat);
+        return false;
+    }, false);
 
-        //setTimeout(refresh, 5000);
-
-        window.onload = function(){
-            // Prepare and check if requirements are filled
-            Initialize();
-
-            var convertAudio = function(AudioBLOB){
-                    // Note:
-                    // Use the AudioBLOB for whatever you need, to download
-                    // directly in the browser, to upload to the server, you name it !
-
-                    // In this case we are going to add an Audio item to the list so you
-                    // can play every stored Audio
-                    var url = URL.createObjectURL(AudioBLOB);
-                    var li = document.createElement('li');
-                    var au = document.createElement('audio');
-                    var hf = document.createElement('a');
-
-                    au.controls = true;
-                    au.src = url;
-                    hf.href = url;
-                    // Important:
-                    // Change the format of the file according to the mimetype
-                    // e.g for audio/wav the extension is .wav 
-                    //     for audio/mpeg (mp3) the extension is .mp3
-                    hf.download = new Date().toISOString() + '.wav';
-                    hf.innerHTML = hf.download;
-                    li.appendChild(au);
-                    li.appendChild(hf);
-                }
-
-            // Handle on start recording button
-            document.getElementById("start-btn").addEventListener("click", function(){
-                startRecording();
-            }, false);
-
-            document.getElementById("accept-btn").addEventListener("click", function(){
-              if(document.getElementById("accept-btn").disabled === false) {
-                document.getElementById("accept-btn").disabled = true;
-                alert('Recording Call Now');
-                startRecording();
-              }
-            }, false);
-
-            // Handle on stop recording button
-            document.getElementById("transfer").addEventListener("click", function(event) {
-                var message = {
-                    handle: $('#handle').val(),
-                    message: $('#message').val(),
-                    type:'transfer',
-                    callId: callId,
-                    from:userId
-                }
-                chatsock.send(JSON.stringify(message));
-                var _AudioFormat = "audio/wav";
-                stopRecording(convertAudio, _AudioFormat);
-                return false;
-            }, false);
-            
-            document.getElementById("stop-btn").addEventListener("click", function(){
-                // Use wav format
-                var _AudioFormat = "audio/wav";
-                stopRecording(convertAudio, _AudioFormat);
-            }, false);
-        };
-    </script>
-
-    <!-- Include the recorder.js library from a local copy -->
-    <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
-    <script type="text/javascript" src='{% static "chat.js" %}'></script>
-    
-    
-
-{% endblock content %}
-{% block afterbody %}
-{% endblock afterbody %}
-
+    document.getElementById("stop-btn").addEventListener("click", function() {
+        // Use wav format
+        var _AudioFormat = "audio/wav";
+        stopRecording(convertAudio, _AudioFormat);
+    }, false);
+};
+</script>
+<!-- Include the recorder.js library from a local copy -->
+<script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+<script type="text/javascript" src='{% static "chat.js" %}'></script>
+<script src='https://code.jquery.com/jquery-2.2.0.min.js'></script>
+<script src='https://cdn.rawgit.com/admsev/jquery-play-sound/master/jquery.playSound.js'></script>
+{% endblock content %} {% block afterbody %} {% endblock afterbody %}
