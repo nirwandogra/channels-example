@@ -38,6 +38,7 @@ def ws_connect(message):
 @channel_session
 def ws_receive(message):
     # Look up the room from the channel session, bailing if it doesn't exist
+    print 'yoman',message
     try:
         label = message.channel_session['room']
         room = Room.objects.get(label=label)
@@ -55,18 +56,13 @@ def ws_receive(message):
     except ValueError:
         log.debug("ws message isn't json text=%s", text)
         return
-    
-    if set(data.keys()) != set(('handle', 'message')):
-        log.debug("ws message unexpected format data=%s", data)
-        return
+
+    print data
+    print message.user
 
     if data:
-        log.debug('chat message room=%s handle=%s message=%s', 
-            room.label, data['handle'], data['message'])
-        m = room.messages.create(**data)
-
         # See above for the note about Group
-        Group('chat-'+label, channel_layer=message.channel_layer).send({'text': json.dumps(m.as_dict())})
+        Group('chat-'+label, channel_layer=message.channel_layer).send({'text': json.dumps(data)})
 
 @channel_session
 def ws_disconnect(message):
