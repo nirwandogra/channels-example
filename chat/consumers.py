@@ -58,7 +58,6 @@ def ws_receive(message):
         return
 
     print data
-    print message.user
 
     if data:
         # See above for the note about Group
