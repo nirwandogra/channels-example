@@ -22,3 +22,20 @@ button:enabled
   /*other style properties*/
 }
 
+#keywords {
+	table-layout: fixed;
+	width: 100%;
+}
+
+#workflows {
+	table-layout: fixed;
+	width: 100%;
+}
+
+#issues {
+	table-layout: fixed;
+	width: 100%;
+}
+td {
+	text-align: center;
+}
