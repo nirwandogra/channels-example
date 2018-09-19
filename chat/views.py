@@ -1,3 +1,4 @@
+import requests
 import traceback
 import uuid
 import os
@@ -213,6 +214,30 @@ def getCallById(request, callId):
         fileData = get_objects(File.objects.filter(callId_id=id));
         print fileData
     return HttpResponse(json.dumps(fileData),content_type='application/json');
+
+def callPunchuatedText(request, callId):
+    options = {
+        'callId':callId
+    }
+    call = Call.objects.filter(call_id=callId);
+    print '###' , call;
+    fileData = {}
+    if(len(call) > 0):
+        id = call[0].id
+        print id
+        fileData = get_objects(File.objects.filter(callId_id=id));
+        text = ''
+        for f in fileData:
+            text = text + f['text'] + ' ';
+        print 'Getting punchuated text :'
+        r = requests.post("http://bark.phon.ioc.ee/punctuator", 
+            data={'text': text});
+        print r.content
+        response = {
+            'text':r.content
+        }
+    return HttpResponse(json.dumps(response),content_type='application/json');
+
 
 
 

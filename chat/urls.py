@@ -10,4 +10,7 @@ urlpatterns = [
 
     url(r'^call/(?P<callId>[\w-]{,200})$', views.getCallById,
         name='getCallById'),
+
+    url(r'^callPunchuatedText/(?P<callId>[\w-]{,200})$', views.callPunchuatedText,
+        name='callPunchuatedText'),
 ]
