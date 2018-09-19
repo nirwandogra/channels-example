@@ -1,3 +1,5 @@
+import re
+import RAKE
 import requests
 import traceback
 import uuid
@@ -232,12 +234,17 @@ def callPunchuatedText(request, callId):
         print 'Getting punchuated text :'
         r = requests.post("http://bark.phon.ioc.ee/punctuator", 
             data={'text': text});
-        print r.content
+        
+        Rake = RAKE.Rake(RAKE.SmartStopList())
+        keywords = Rake.run(text,minCharacters = 1, maxWords = 1, minFrequency = 1)[0:5]
+        for keyword in keywords:
+            boldKeyword = '<b>' + keyword[0] + '</b>'
+            insensitive_hippo = re.compile(re.escape(keyword[0]), re.IGNORECASE)
+            text = insensitive_hippo.sub(boldKeyword,text)
+
         response = {
-            'text':r.content
+            'text':text,
+            'keywords':keywords
         }
     return HttpResponse(json.dumps(response),content_type='application/json');
-
-
-
 

@@ -1,15 +1,15 @@
 {% extends "base.html" %} {% block content %} {% load staticfiles %}
 <h1> Call Room</h1>
 <button id="accept-btn" disabled>Accept Call</button>
-<button id="start-btn">Start recording</button>
-<button id="stop-btn" disabled>Stop recording</button>
-<button id="transfer" disabled>Transfer</button>
+<button id="start-btn">Start Call</button>
+<button id="stop-btn" disabled>End Call</button>
+<button id="transfer" disabled>Transfer Call</button>
 <script type="text/javascript" src='{% static "reconnecting-websocket.min.js" %}'></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <br>
 <br>
 <br>
-<table id='conversations' style="width:60%">
+<table id='conversations' style="width:100%">
     <tr>
     </tr>
 </table>
@@ -104,7 +104,7 @@ function stopRecording(callback, AudioFormat) {
 
     dataGlobal = {};
     showConversations = false;
-    $("table tbody").empty();
+    //$("table tbody").empty();
 
     // Use the Recorder Library to export the recorder Audio as a .wav file
     // The callback providen in the stop recording method receives the blob
@@ -153,11 +153,20 @@ chatsock.onmessage = function(message) {
     var data = JSON.parse(message.data);
     console.log('On message ' , data);
 
+    var playSound = function() {
+      if(document.getElementById("accept-btn").disabled === false) {
+        $.playSound("https://files.prokerala.com/downloads/ringtones/files/mp3/crystal-sound-by-lobh-41989.mp3");
+        setTimeout(playSound, 1000);
+      }else {
+        $(".sound-player").remove();
+      }
+    }
+
     if ('type' in data && data['type'] === 'transfer' && userId !== data['from']) {
+        setTimeout(playSound, 0);
         alert('Incoming Call');
         dataGlobal = data;
         document.getElementById("accept-btn").disabled = false;
-        $.playSound("http://www.noiseaddicts.com/samples_1w72b820/3724.mp3");
     }
 };
 
@@ -165,26 +174,31 @@ window.refresh = function() {
     if (dataGlobal && dataGlobal['callId'] && showConversations === true) {
         $.ajax({
             type: 'GET',
-            url: '/call/' + callId
+            url: '/callPunchuatedText/' + callId
         }).done(function(data) {
             console.log(data);
             console.log(typeof(data));
             console.log(data.length);
             $("table tbody").empty();
-            $("table tbody").append("<tr><td>#</td><td>Conversations</td></tr>");
-            for (var i = 0; i < data.length; i++) {
-                console.log('yoman');
-                console.log(data[i]);
-                var cnt = i + 1;
-                var text = data[data.length-i-1]['text'];
-                console.log(text)
-                var conversation = "<tr><td>" + cnt + "</td><td>" + text + "</td></tr>";
-                $("table tbody").append(conversation);
-            }
-            setTimeout(window.refresh, 1000);
+            $("table tbody").append("<h2>Previous Conversations</h2>");
+            var conversation = "<tr><td>" + data['text'] + "</td></tr>";
+            $("table tbody").append(conversation);
+            // for (var i = 0; i < data.length; i++) {
+            //     console.log('yoman');
+            //     console.log(data[i]);
+            //     var cnt = i + 1;
+            //     var text = data[data.length-i-1]['text'];
+            //     console.log(text)
+            //     var conversation = "<tr><td>" + cnt + "</td><td>" + text + "</td></tr>";
+            //     $("table tbody").append(conversation);
+            //     var element = $('#conversations')[0];
+            //     //hiliter(text.split(/[^A-Za-z]/), element);
+            // }
+            var element = $('#conversations')[0];
+            setTimeout(window.refresh, 2000);
         });
     } else {
-        setTimeout(window.refresh, 1000);
+        setTimeout(window.refresh, 2000);
     }
 }
 
@@ -206,6 +220,7 @@ window.onload = function() {
     document.getElementById("accept-btn").addEventListener("click", function() {
         if (document.getElementById("accept-btn").disabled === false) {
             document.getElementById("accept-btn").disabled = true;
+            $(".sound-player").remove();
             showConversations = true;
             startRecording();
         }
