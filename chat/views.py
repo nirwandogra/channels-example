@@ -1,3 +1,4 @@
+from rake_nltk import Rake
 import re
 import RAKE
 import requests
@@ -238,11 +239,16 @@ def callPunchuatedText(request, callId):
         print 'Received punchuated text from punctuator service .'
         text = r.content;
         
-        Rake = RAKE.Rake(RAKE.SmartStopList())
-        keywords = Rake.run(text,minCharacters = 1, maxWords = 1, minFrequency = 1)[0:5]
-        for keyword in keywords:
-            boldKeyword = '<b>' + keyword[0] + '</b>'
-            insensitive_hippo = re.compile(re.escape(keyword[0]), re.IGNORECASE)
+        xx = RAKE.Rake(RAKE.SmartStopList())
+        keywords = xx.run(text,minCharacters = 1, maxWords = 1, minFrequency = 1)[0:5]
+
+        ra = Rake()
+        ra.extract_keywords_from_text(text)
+        phrases = ra.get_ranked_phrases()[0:5]
+
+        for phrase in phrases:
+            boldKeyword = '<b>' + phrases[0] + '</b>'
+            insensitive_hippo = re.compile(re.escape([phrase][0]), re.IGNORECASE)
             text = insensitive_hippo.sub(boldKeyword,text)
 
         response = {
