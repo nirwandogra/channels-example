@@ -247,9 +247,14 @@ def callPunchuatedText(request, callId):
         phrases = ra.get_ranked_phrases()[0:5]
         print phrases
         for phrase in phrases:
-            boldKeyword = '<b>' + phrase[0] + '</b>'
-            print boldKeyword
+            boldKeyword = '<b>' + phrase + '</b>'
             insensitive_hippo = re.compile(re.escape([phrase][0]), re.IGNORECASE)
+            text = insensitive_hippo.sub(boldKeyword,text)
+
+        words = ['wifi', 'bluetooth', 'device', 'alexa']
+        for w in words:
+            boldKeyword = '<b>' + w + '</b>'
+            insensitive_hippo = re.compile(re.escape(w), re.IGNORECASE)
             text = insensitive_hippo.sub(boldKeyword,text)
 
         response = {

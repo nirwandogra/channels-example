@@ -266,7 +266,9 @@ window.refresh = function() {
             $("#issues").append(issuesDiv);
             var element = $('#conversations')[0];
             setTimeout(window.refresh, 2000);
-        });
+        }).error(function(err) {
+          setTimeout(window.refresh, 2000);
+        })
     } else {
          setTimeout(window.refresh, 2000);
     }
