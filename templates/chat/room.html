@@ -1,8 +1,33 @@
+
 {% extends "base.html" %} {% block content %} {% load staticfiles %}
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+<style>
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+  text-align:center
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
 
 <div class="container">
   <div class="row">
@@ -29,21 +54,27 @@
       <table id="keywords">
       </table>
       <div class="alert alert-success" role="alert">
+        Astro Workflows
+      </div>
+      <table id="workflows">        
+      </table>  
+      <div class="alert alert-success" role="alert">
         Related Issues
       </div> 
       <table id="issues">        
       </table> 
-      <div class="alert alert-success" role="alert">
-        Workflows
-      </div>
-      <table id="workflows">        
-      </table>  
     </div>
   </div>
 </div>
 
+<center>
+  <div class="loader">
+  </div>
+</center>
+
 <script>
 // Expose globally your audio_context, the recorder instance and audio_stream
+$(".loader").css('display', 'none');
 var audio_context;
 var recorder;
 var audio_stream;
@@ -52,6 +83,7 @@ var callId = '7cda3c52-a254-4c04-906d-6f2f8712dcdb';
 var dataGlobal = {};
 var showConversations = false;
 var globalCallback;
+var recordingTimeout = 4000;
 /**
  * Patch the APIs for every browser that supports them and check
  * if getUserMedia is supported on the browser. 
@@ -104,7 +136,7 @@ function startRecording() {
         setTimeout(function() {
             recorder && recorder.exportWAV(uploadRecording,
                 ("audio/wav"))
-        }, 3000);
+        }, recordingTimeout);
 
     }, function(e) {
         console.error('No live audio input: ' + e);
@@ -169,7 +201,7 @@ var uploadRecording = function(blob) {
         setTimeout(function() {
             recorder && recorder.exportWAV(uploadRecording,
                 ("audio/wav"))
-        }, 3000);
+        }, recordingTimeout);
     }
 }
 
@@ -203,10 +235,12 @@ chatsock.onmessage = function(message) {
 
 window.refresh = function() {
     if(document.getElementById("start-btn").disabled === true) {
+        $(".loader").css('display', 'block');
         $.ajax({
             type: 'GET',
             url: '/callPunchuatedText/' + callId
         }).done(function(data) {
+            $(".loader").css('display', 'none');
             console.log(data);
             console.log(typeof(data));
             console.log(data.length);
@@ -221,9 +255,9 @@ window.refresh = function() {
             var issuesDiv = "";
             for(var counter = 0 ; counter < data['keywords'].length ; counter++) {
                 keywordsDiv = keywordsDiv + "<tr> <td>"+data['keywords'][counter][0] +"</td> </tr> ";
-                workflowsDiv = workflowsDiv +"<tr> <td> <a href=\"www.google.com\">"
+                workflowsDiv = workflowsDiv +"<tr> <td> <a href=\"https://cscentral-gamma.amazon.com/gp/stores/www.amazon.com/gp/customer/kindle/detail/agent-troubleshooting/?ie=UTF8&customerID=A1GMQV5D2DCBLZ&unitID=GXX0K9BD95TQQ3B3&unitType=A363JBKK6AP29Q&usecaseSessionID=60036608161\">"
                 +data['keywords'][counter][0] +"</a> </td> </tr> ";
-                issuesDiv = issuesDiv +"<tr> <td> <a href=\"www.google.com\">"
+                issuesDiv = issuesDiv +"<tr> <td> <a href=\"https://d2c2.amazon.com/event/465223277\">"
                 +data['keywords'][counter][0] +"</a> </td> </tr> ";
             }
             $("table tbody").append(conversation);

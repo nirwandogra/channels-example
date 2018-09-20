@@ -64,10 +64,14 @@ class File(models.Model):
     name = models.CharField(max_length=255)
     text = models.CharField(max_length=255)
     callId = models.ForeignKey(Call)
+    date = models.DateTimeField(auto_now_add=True, blank=True)
     peopleInvolved = ListField()
 
     def __unicode__(self):
         return self.name
+
+    class Meta:
+       ordering = ['-date']
 
     def get_json(self, flag=0):
         return {

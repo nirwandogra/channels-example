@@ -162,6 +162,7 @@ def save_and_upload(request, attributes):
             print 'Converting Text to speech '
             r = sr.Recognizer()
             with sr.AudioFile(tmp_file) as source:
+                r.adjust_for_ambient_noise(source)
                 audio = r.record(source)
             command = r.recognize_google(audio)
             print command
@@ -230,7 +231,7 @@ def callPunchuatedText(request, callId):
         fileData = get_objects(File.objects.filter(callId_id=id));
         text = ''
         for f in fileData:
-            text = text + f['text'] + ' ';
+            text = f['text'] + text + ' ';
         print 'Getting punchuated text :'
         r = requests.post("http://bark.phon.ioc.ee/punctuator", 
             data={'text': text});
