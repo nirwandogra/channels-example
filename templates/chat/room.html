@@ -133,7 +133,7 @@ function stopRecording(callback, AudioFormat) {
 
     dataGlobal = {};
     showConversations = false;
-    //$("table tbody").empty();
+    $("table tbody").empty();
 
     // Use the Recorder Library to export the recorder Audio as a .wav file
     // The callback providen in the stop recording method receives the blob
@@ -191,7 +191,9 @@ chatsock.onmessage = function(message) {
       }
     }
 
+    console.log('Call Transferred');
     if ('type' in data && data['type'] === 'transfer' && userId !== data['from']) {
+        console.log('Call Transferred');
         setTimeout(playSound, 0);
         alert('Incoming Call');
         dataGlobal = data;
@@ -200,7 +202,7 @@ chatsock.onmessage = function(message) {
 };
 
 window.refresh = function() {
-    if (dataGlobal && dataGlobal['callId'] && showConversations === true) {
+    if(document.getElementById("start-btn").disabled === true) {
         $.ajax({
             type: 'GET',
             url: '/callPunchuatedText/' + callId
@@ -212,7 +214,7 @@ window.refresh = function() {
             $("#workflows").empty();
             $("#issues").empty();
             $("table tbody").empty();
-            $("table tbody").append("<h2>Previous Conversations</h2>");
+            $("table tbody").append("<h2>Conversations</h2>");
             var conversation = "<tr><td>" + data['text'] + "</td></tr>";
             var keywordsDiv = "";
             var workflowsDiv = "";

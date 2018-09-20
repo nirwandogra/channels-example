@@ -234,6 +234,8 @@ def callPunchuatedText(request, callId):
         print 'Getting punchuated text :'
         r = requests.post("http://bark.phon.ioc.ee/punctuator", 
             data={'text': text});
+        print 'Received punchuated text from punctuator service .'
+        text = r.content;
         
         Rake = RAKE.Rake(RAKE.SmartStopList())
         keywords = Rake.run(text,minCharacters = 1, maxWords = 1, minFrequency = 1)[0:5]
