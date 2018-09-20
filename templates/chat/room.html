@@ -225,11 +225,12 @@ chatsock.onmessage = function(message) {
 
     console.log('Call Transferred');
     if ('type' in data && data['type'] === 'transfer' && userId !== data['from']) {
+        document.getElementById("accept-btn").disabled = false;
         console.log('Call Transferred');
-        setTimeout(playSound, 0);
+        playSound();
         alert('Incoming Call');
         dataGlobal = data;
-        document.getElementById("accept-btn").disabled = false;
+        
     }
 };
 
