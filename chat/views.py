@@ -245,9 +245,10 @@ def callPunchuatedText(request, callId):
         ra = Rake()
         ra.extract_keywords_from_text(text)
         phrases = ra.get_ranked_phrases()[0:5]
-
+        print phrases
         for phrase in phrases:
-            boldKeyword = '<b>' + phrases[0] + '</b>'
+            boldKeyword = '<b>' + phrase[0] + '</b>'
+            print boldKeyword
             insensitive_hippo = re.compile(re.escape([phrase][0]), re.IGNORECASE)
             text = insensitive_hippo.sub(boldKeyword,text)
 
