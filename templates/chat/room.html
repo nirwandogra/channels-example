@@ -32,16 +32,26 @@
 <div class="container">
   <div class="row">
     <div class="col">
-      <h1> Call Room</h1>
-          <button id="accept-btn" disabled>Accept Call</button>
-          <button id="start-btn">Start Call</button>
-          <button id="stop-btn" disabled>End Call</button>
-          <button id="transfer" disabled>Transfer Call</button>
+          <div class="jumbotron jumbotron-fluid">
+            <div class="container">
+              <h1 class="display-4" id="userId">Call Room</h1>
+              <p class="lead">- CS Central</p>
+            </div>
+          </div>
+          <button id="accept-btn" type="button" class="btn btn-secondary" disabled>Accept Call</button>
+          <button id="start-btn" type="button" class="btn btn-success">Start Call</button>
+          <button id="stop-btn" type="button" class="btn btn-secondary" disabled>End Call</button>
+          <button id="transfer" type="button" class="btn btn-secondary" disabled>Transfer Call</button>
           <script type="text/javascript" src='{% static "reconnecting-websocket.min.js" %}'></script>
           <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
           <br>
           <br>
           <br>
+          <center>
+            <div class="loader">
+            </div>
+          </center>
+          <hr>
           <table id='conversations' style="width:100%">
               <tr>
               </tr>
@@ -49,28 +59,18 @@
     </div>
     <div class="col col-lg-2">
       <div class="alert alert-success" role="alert">
-        Keywords
+        Related Events
       </div>
-      <table id="keywords">
-      </table>
+      <table id="issues">
+      </table> 
       <div class="alert alert-success" role="alert">
-        Astro Workflows
+        Related Workflows
       </div>
       <table id="workflows">        
       </table>  
-      <div class="alert alert-success" role="alert">
-        Related Issues
-      </div> 
-      <table id="issues">        
-      </table> 
     </div>
   </div>
 </div>
-
-<center>
-  <div class="loader">
-  </div>
-</center>
 
 <script>
 // Expose globally your audio_context, the recorder instance and audio_stream
@@ -79,6 +79,7 @@ var audio_context;
 var recorder;
 var audio_stream;
 var userId = prompt("Please enter your name");
+$('#userId').append(':' , userId ,'  talking with Sarthak');
 var callId = '7cda3c52-a254-4c04-906d-6f2f8712dcdb';
 var dataGlobal = {};
 var showConversations = false;
@@ -132,6 +133,9 @@ function startRecording() {
         document.getElementById("start-btn").disabled = true;
         document.getElementById("stop-btn").disabled = false;
         document.getElementById("transfer").disabled = false;
+        document.getElementById("start-btn").className="btn btn-secondary";
+        document.getElementById("stop-btn").className="btn btn-success";
+        document.getElementById("transfer").className="btn btn-success";
 
         setTimeout(function() {
             recorder && recorder.exportWAV(uploadRecording,
@@ -162,6 +166,10 @@ function stopRecording(callback, AudioFormat) {
     document.getElementById("stop-btn").disabled = true;
     document.getElementById("transfer").disabled = true;
     document.getElementById("accept-btn").disabled = true;
+    document.getElementById("start-btn").className = "btn btn-success";
+    document.getElementById("stop-btn").className = "btn btn-secondary";
+    document.getElementById("transfer").className = "btn btn-secondary";
+    document.getElementById("accept-btn").className = "btn btn-secondary";
 
     dataGlobal = {};
     showConversations = false;
@@ -210,24 +218,26 @@ var ws_scheme = window.location.protocol == "https:" ? "wss" : "ws";
 var chatsock = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/chat" + window.location.pathname);
 console.log('connected');
 
-chatsock.onmessage = function(message) {
-    var data = JSON.parse(message.data);
-    console.log('On message ' , data);
-
-    var playSound = function() {
+var playSound = function() {
       if(document.getElementById("accept-btn").disabled === false) {
-        $.playSound("https://files.prokerala.com/downloads/ringtones/files/mp3/crystal-sound-by-lobh-41989.mp3");
-        setTimeout(playSound, 1000);
+        $.playSound('{% static "crystal-sound-by-lobh-41989.mp3" %}');
+        setTimeout(playSound, 0);
       }else {
         $(".sound-player").remove();
       }
     }
 
+chatsock.onmessage = function(message) {
+    var data = JSON.parse(message.data);
+    console.log('On message ' , data);
+
     console.log('Call Transferred');
     if ('type' in data && data['type'] === 'transfer' && userId !== data['from']) {
+        document.getElementById("accept-btn").className = "btn btn-success";
         document.getElementById("accept-btn").disabled = false;
         console.log('Call Transferred');
-        playSound();
+        $.playSound('{% static "crystal-sound-by-lobh-41989.mp3" %}');
+        //playSound();
         alert('Incoming Call');
         dataGlobal = data;
         
@@ -245,7 +255,7 @@ window.refresh = function() {
             console.log(data);
             console.log(typeof(data));
             console.log(data.length);
-            $("#keywords").empty();
+            // $("#keywords").empty();
             $("#workflows").empty();
             $("#issues").empty();
             $("table tbody").empty();
@@ -255,14 +265,13 @@ window.refresh = function() {
             var workflowsDiv = "";
             var issuesDiv = "";
             for(var counter = 0 ; counter < data['keywords'].length ; counter++) {
-                keywordsDiv = keywordsDiv + "<tr> <td>"+data['keywords'][counter][0] +"</td> </tr> ";
-                workflowsDiv = workflowsDiv +"<tr> <td> <a href=\"https://cscentral-gamma.amazon.com/gp/stores/www.amazon.com/gp/customer/kindle/detail/agent-troubleshooting/?ie=UTF8&customerID=A1GMQV5D2DCBLZ&unitID=GXX0K9BD95TQQ3B3&unitType=A363JBKK6AP29Q&usecaseSessionID=60036608161\">"
-                +data['keywords'][counter][0] +"</a> </td> </tr> ";
-                issuesDiv = issuesDiv +"<tr> <td> <a href=\"https://d2c2.amazon.com/event/465223277\">"
-                +data['keywords'][counter][0] +"</a> </td> </tr> ";
+                keywordsDiv = keywordsDiv + "<tr> <td>"+data['keywords'][counter] +"</td> </tr> ";
+                workflowsDiv = workflowsDiv +"<tr> <td data-toggle=tooltip' id='event' > <a href=\"https://cscentral-gamma.amazon.com/gp/stores/www.amazon.com/gp/customer/kindle/detail/agent-troubleshooting/?ie=UTF8&customerID=A1GMQV5D2DCBLZ&unitID=GXX0K9BD95TQQ3B3&unitType=A363JBKK6AP29Q&usecaseSessionID=60036608161\">"
+                +data['keywords'][counter]+"</a> </td> </tr> ";
+                issuesDiv = issuesDiv +"<tr> <td> <a title = 'Resolution : Go to settings , clear cache and kill all applications .' href=\"https://d2c2.amazon.com/event/465223277\">Event " + (counter+1) + " </a> </td> </tr> ";
             }
             $("table tbody").append(conversation);
-            $("#keywords").append(keywordsDiv);
+            //$("#keywords").append(keywordsDiv);
             $('#workflows').append(workflowsDiv);
             $("#issues").append(issuesDiv);
             var element = $('#conversations')[0];
@@ -274,6 +283,7 @@ window.refresh = function() {
          setTimeout(window.refresh, 2000);
     }
 }
+
 
 setTimeout(window.refresh(), 1000);
 
@@ -293,6 +303,7 @@ window.onload = function() {
     document.getElementById("accept-btn").addEventListener("click", function() {
         if (document.getElementById("accept-btn").disabled === false) {
             document.getElementById("accept-btn").disabled = true;
+            document.getElementById("accept-btn").className = "btn btn-secondary";
             $(".sound-player").remove();
             showConversations = true;
             startRecording();

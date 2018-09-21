@@ -16,12 +16,6 @@ p.deck a {
     color: #999;
 }
 
-button:enabled
-{
-  background-color: #7FFF00;
-  /*other style properties*/
-}
-
 #keywords {
 	table-layout: fixed;
 	width: 100%;
@@ -38,4 +32,8 @@ button:enabled
 }
 td {
 	text-align: center;
+}
+
+.jumbotron {
+	padding: 1rem !important;
 }
